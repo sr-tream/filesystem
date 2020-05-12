@@ -7,7 +7,8 @@
 	BSD-style license that can be found in the LICENSE file.
 */
 
-#pragma once
+#ifndef FILESYSTEM_PATH
+#define FILESYSTEM_PATH
 
 #include "fwd.h"
 #include <algorithm>
@@ -309,7 +310,16 @@ public:
 		set( str );
 		return *this;
 	}
+	path &operator+=( const std::wstring &str ) {
+		set( this->wstr() + str );
+		return *this;
+	}
 #endif
+
+	path &operator+=( const std::string &str ) {
+		set( this->str() + str );
+		return *this;
+	}
 
 	bool operator==( const path &p ) const { return p.m_path == m_path; }
 	bool operator!=( const path &p ) const { return p.m_path != m_path; }
@@ -365,4 +375,19 @@ inline bool create_directories( const path &p ) {
 #endif
 }
 
+inline std::vector< path > entry( path search_path ) {
+	std::vector< path > names;
+	WIN32_FIND_DATAW	fd;
+	HANDLE				hFind = ::FindFirstFileW( ( search_path.wstr() + L"*" ).c_str(), &fd );
+	if ( hFind != INVALID_HANDLE_VALUE ) {
+		do {
+			names.push_back( path( fd.cFileName ) );
+		} while ( ::FindNextFileW( hFind, &fd ) );
+		::FindClose( hFind );
+	}
+	return names;
+}
+
 NAMESPACE_END( filesystem )
+
+#endif // FILESYSTEM_PATH
