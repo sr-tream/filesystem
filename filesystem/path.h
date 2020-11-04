@@ -110,8 +110,9 @@ public:
 
 	bool is_directory() const {
 #if defined( _WIN32 )
-		auto path = wstr() + L"\\.";
-		return _waccess( path.c_str(), 0 );
+		DWORD result = GetFileAttributesW( wstr().c_str() );
+		if ( result == INVALID_FILE_ATTRIBUTES ) return false;
+		return ( result & FILE_ATTRIBUTE_DIRECTORY ) != 0;
 #else
 		struct stat sb;
 		if ( stat( str().c_str(), &sb ) ) return false;
