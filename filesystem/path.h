@@ -12,14 +12,14 @@
 
 #include "fwd.h"
 #include <algorithm>
+#include <cctype>
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <stdexcept>
-#include <sstream>
-#include <cctype>
-#include <cstdlib>
-#include <cerrno>
-#include <cstring>
 
 #if defined( _WIN32 )
 #	include <windows.h>
@@ -325,9 +325,9 @@ public:
 	bool operator!=( const path &p ) const { return p.m_path != m_path; }
 
 protected:
-	static std::vector< std::string > tokenize( const std::string &string, const std::string &delim ) {
-		std::string::size_type	   lastPos = 0, pos = string.find_first_of( delim, lastPos );
-		std::vector< std::string > tokens;
+	static std::vector<std::string> tokenize( const std::string &string, const std::string &delim ) {
+		std::string::size_type	 lastPos = 0, pos = string.find_first_of( delim, lastPos );
+		std::vector<std::string> tokens;
 
 		while ( lastPos != std::string::npos ) {
 			if ( pos != lastPos ) tokens.push_back( string.substr( lastPos, pos - lastPos ) );
@@ -343,10 +343,10 @@ protected:
 #if defined( _WIN32 )
 	static const size_t MAX_PATH_WINDOWS = 32767;
 #endif
-	static const size_t		   MAX_PATH_WINDOWS_LEGACY = 260;
-	path_type				   m_type;
-	std::vector< std::string > m_path;
-	bool					   m_absolute;
+	static const size_t		 MAX_PATH_WINDOWS_LEGACY = 260;
+	path_type				 m_type;
+	std::vector<std::string> m_path;
+	bool					 m_absolute;
 };
 
 inline bool create_directory( const path &p ) {
@@ -375,10 +375,16 @@ inline bool create_directories( const path &p ) {
 #endif
 }
 
-inline std::vector< path > entry( path search_path ) {
-	std::vector< path > names;
-	WIN32_FIND_DATAW	fd;
-	HANDLE				hFind = ::FindFirstFileW( ( search_path.wstr() + L"*" ).c_str(), &fd );
+inline std::vector<path> entry( path search_path ) {
+	std::vector<path> names;
+	WIN32_FIND_DATAW  fd;
+	wchar_t			  cur_path[MAX_PATH];
+	GetCurrentDirectoryW( sizeof( cur_path ), cur_path );
+	auto len = wcslen( cur_path );
+	if ( cur_path[len - 1] != L'/' && cur_path[len - 1] != L'\\' ) wcscat( cur_path, L"\\" );
+	std::wstring userPath = cur_path + search_path.wstr();
+	if ( userPath.back() != L'/' && userPath.back() != L'\\' ) userPath += L'\\';
+	HANDLE hFind = ::FindFirstFileW( ( userPath + L"*" ).c_str(), &fd );
 	if ( hFind != INVALID_HANDLE_VALUE ) {
 		do {
 			names.push_back( path( fd.cFileName ) );
